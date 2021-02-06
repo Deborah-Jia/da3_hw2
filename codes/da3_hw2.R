@@ -3,7 +3,7 @@
 #### SET UP
 
 rm(list=ls())
-
+options(scipen = 999)
 # Import libraries
 library(haven)
 library(glmnet)
@@ -66,35 +66,23 @@ data <- data %>%
 
 # add all missing year and comp_id combinations -
 # originally missing combinations will have NAs in all other columns
-data <- data %>%
-  complete(year, comp_id)
 
-# generate status_alive; if sales larger than zero and not-NA, then firm is alive
-
-data  <- data %>%
-  mutate(!is.na(profit_loss_year) %>%
-           as.numeric(.))
-
-data <- data %>% filter(!is.na(profit_loss_year))
-
-# filter for 2 years period
 data <- data %>%
   filter(year >= 2012 & year <= 2014)
 
+data <- data %>%
+  complete(year, comp_id)
 
-# defaults in two years if there are sales in this year but no sales two years later
-# data <- data %>%
-#  group_by(comp_id) %>%
-#  mutate(default = ((status_alive == 1) & (lead(status_alive, 2) == 0)) %>%
-#           as.numeric(.)) %>%
-#  ungroup()
+calc_cagr <- function(df, n) {
+  df <- df %>%
+    arrange(year, comp_id) %>%
+    group_by(comp_id) %>%
+    mutate(cagr = ((sales / lag(sales, n)) ^ (1 / n)) - 1)
+  
+  return(df)
+}
 
-Hmisc::describe(data$profit_loss_year)
-
-Hmisc::describe(data$sales)
-
-# Size and growth
-summary(data$profit_loss_year)
+data <- calc_cagr(data,2)
 
 data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
@@ -102,26 +90,20 @@ data <- data %>%
          sales_mil=sales/1000000,
          sales_mil_log = ifelse(sales > 0, log(sales_mil), 0))
 
-summary(data$CAGR)
 
-table_cagr <- data %>%
-   group_by(comp_id) %>%
-     summarize(CAGR = ((profit_loss_year / lag(profit_loss_year, 2)^0.33)-1))
-mutate(CAGR = ((lead(status_alive, 2) == 0)) %>%
-
-%>%
-     mutate(fast_growth = (CAGR >= 0.2) %>%
-        as.numeric(.)) %>%
-           ungroup()         
-         
 data <- data %>%
-  
-  group_by(comp_id) %>%
-  mutate(d1_sales_mil_log = sales_mil_log - Lag(sales_mil_log, 1) ) %>%
-  ungroup()
+  filter(year <=2014 & year >= 2012)
 
+table(is.nan(data$cagr))
+
+data$cagr <- ifelse(is.nan(data$cagr), 0, data$cagr )
 
 # replace w 0 for new firms + add dummy to capture it
+data <- data %>%
+  mutate(fast_growth = ifelse( cagr >= 20, 1, 0) %>%
+    as.numeric(.))
+  
+
 data <- data %>%
   mutate(age = (year - founded_year) %>%
            ifelse(. < 0, 0, .),
