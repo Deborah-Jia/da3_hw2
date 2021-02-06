@@ -45,7 +45,7 @@ data_in <- paste(data_dir,"da3_hw2/data", sep = "/")
 
 #use_case_dir <- "ch17-predicting-firm-exit/"
 
-data_out <- paste0(data_dir,"/da3_hw2/data/raw/")
+data_out <- paste0(data_dir,"/da3_hw2/data/clean/")
 # output <- paste0(data_in,"clean/")
 
 
@@ -173,7 +173,7 @@ data <- data %>%
            ifelse(is.na(.), 99, .)
   )
 
-table(data$ind2_cat)
+table(data1$ind2_cat)
 
 # Firm characteristics
 data <- data %>%
@@ -189,6 +189,7 @@ data <- data %>%
 # assets can't be negative. Change them to 0 and add a flag.
 data <-data  %>%
   mutate(flag_asset_problem=ifelse(intang_assets<0 | curr_assets<0 | fixed_assets<0,1,0  ))
+
 table(data$flag_asset_problem)
 
 data <- data %>%
@@ -196,9 +197,11 @@ data <- data %>%
          curr_assets = ifelse(curr_assets < 0, 0, curr_assets),
          fixed_assets = ifelse(fixed_assets < 0, 0, fixed_assets))
 
+
 # generate total assets
 data <- data %>%
   mutate(total_assets_bs = intang_assets + curr_assets + fixed_assets)
+
 summary(data$total_assets_bs)
 
 
@@ -287,8 +290,8 @@ data <- data %>%
          ind2_cat = factor(ind2_cat, levels = sort(unique(data$ind2_cat))))
 
 data <- data %>%
-  mutate(default_f = factor(default, levels = c(0,1)) %>%
-           recode(., `0` = 'no_default', `1` = "default"))
+  mutate(fast_growth_f = factor(fast_growth, levels = c(0,1)) %>%
+           recode(., `0` = 'NO', `1` = "YES"))
 
 ########################################################################
 # sales 
@@ -298,15 +301,15 @@ data <- data %>%
   mutate(sales_mil_log_sq=sales_mil_log^2)
 
 
-ggplot(data = data, aes(x=sales_mil_log, y=as.numeric(default))) +
+ggplot(data = data, aes(x=sales_mil_log, y=as.numeric(fast_growth))) +
   geom_point(size=2,  shape=20, stroke=2, fill="blue", color="blue") +
   geom_smooth(method = "lm", formula = y ~ poly(x,2), color=color[4], se = F, size=1)+
   geom_smooth(method="loess", se=F, colour=color[5], size=1.5, span=0.9) +
-  labs(x = "sales_mil_log",y = "default") +
+  labs(x = "sales_mil_log",y = "fast growth") +
   theme_bg()
 
 
-ols_s <- lm(default~sales_mil_log+sales_mil_log_sq,
+ols_s <- lm(fast_growth~sales_mil_log+sales_mil_log_sq,
             data = data)
 summary(ols_s)
 
@@ -318,14 +321,14 @@ summary(ols_s)
 # lowess
 Hmisc::describe(data$d1_sales_mil_log) # no missing
 
-d1sale_1<-ggplot(data = data, aes(x=d1_sales_mil_log, y=as.numeric(default))) +
+d1sale_1<-ggplot(data = data, aes(x=d1_sales_mil_log, y=as.numeric(fast_growth))) +
   geom_point(size=0.1,  shape=20, stroke=2, fill=color[2], color=color[2]) +
   geom_smooth(method="loess", se=F, colour=color[1], size=1.5, span=0.9) +
-  labs(x = "Growth rate (Diff of ln sales)",y = "default") +
+  labs(x = "Growth rate (Diff of ln sales)",y = "F ast growth") +
   theme_bg() +
-  scale_x_continuous(limits = c(-6,10), breaks = seq(-5,10, 5))
+  scale_x_continuous(limits = c(-6,10), breaks = seq(-10,10, 5))
 d1sale_1
-save_fig("ch17-extra-1", output, "small")
+# save_fig("ch17-extra-1", output, "small")
 
 # generate variables ---------------------------------------------------
 
@@ -344,20 +347,21 @@ data <- data %>%
 # drop missing
 data <- data %>%
   filter(!is.na(age),!is.na(foreign), !is.na(material_exp_pl), !is.na(m_region_loc))
+
 Hmisc::describe(data$age)
 
 # drop unused factor levels
 data <- data %>%
   mutate_at(vars(colnames(data)[sapply(data, is.factor)]), funs(fct_drop))
 
-d1sale_2<-ggplot(data = data, aes(x=d1_sales_mil_log_mod, y=as.numeric(default))) +
+d1sale_2<-ggplot(data = data, aes(x=d1_sales_mil_log_mod, y=as.numeric(fast_growth))) +
   geom_point(size=0.1,  shape=20, stroke=2, fill=color[2], color=color[2]) +
   geom_smooth(method="loess", se=F, colour=color[1], size=1.5, span=0.9) +
-  labs(x = "Growth rate (Diff of ln sales)",y = "default") +
+  labs(x = "Growth rate (Diff of ln sales)",y = "fast_growth") +
   theme_bg() +
   scale_x_continuous(limits = c(-1.5,1.5), breaks = seq(-1.5,1.5, 0.5))
 d1sale_2
-save_fig("ch17-extra-2", output, "small")
+# save_fig("ch17-extra-2", output, "small")
 
 d1sale_3<-ggplot(data = data, aes(x=d1_sales_mil_log, y=d1_sales_mil_log_mod)) +
   geom_point(size=0.1,  shape=20, stroke=2, fill=color[2], color=color[2]) +
@@ -366,7 +370,7 @@ d1sale_3<-ggplot(data = data, aes(x=d1_sales_mil_log, y=d1_sales_mil_log_mod)) +
   scale_x_continuous(limits = c(-5,5), breaks = seq(-5,5, 1)) +
   scale_y_continuous(limits = c(-3,3), breaks = seq(-3,3, 1))
 d1sale_3
-save_fig("ch17-extra-3", output, "small")
+# save_fig("ch17-extra-3", output, "small")
 
 
 
