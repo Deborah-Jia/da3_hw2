@@ -58,7 +58,7 @@ data <- read.csv(paste(data_in,"raw/cs_bisnode_panel.csv", sep = "/"))
 # drop variables with many NAs
 data <- data %>%
   select(-c(COGS, finished_prod, net_dom_sales, net_exp_sales, wages)) %>%
-  filter(year !=2016)
+  filter(year != 2016)
 
 ###########################################################
 # label engineering
@@ -70,26 +70,31 @@ data <- data %>%
   complete(year, comp_id)
 
 # generate status_alive; if sales larger than zero and not-NA, then firm is alive
+
 data  <- data %>%
-  mutate(status_alive = sales > 0 & !is.na(sales) %>%
+  mutate(!is.na(profit_loss_year) %>%
            as.numeric(.))
 
+data <- data %>% filter(!is.na(profit_loss_year))
+
+# filter for 2 years period
+data <- data %>%
+  filter(year >= 2012 & year <= 2014)
+
+
 # defaults in two years if there are sales in this year but no sales two years later
-data <- data %>%
-  group_by(comp_id) %>%
-  mutate(default = ((status_alive == 1) & (lead(status_alive, 2) == 0)) %>%
-           as.numeric(.)) %>%
-  ungroup()
+# data <- data %>%
+#  group_by(comp_id) %>%
+#  mutate(default = ((status_alive == 1) & (lead(status_alive, 2) == 0)) %>%
+#           as.numeric(.)) %>%
+#  ungroup()
 
+Hmisc::describe(data$profit_loss_year)
 
-
-data <- data %>%
-  filter(year <=2013)
-
-Hmisc::describe(data$default3)
+Hmisc::describe(data$sales)
 
 # Size and growth
-summary(data$sales) # There will be NAs, we'll drop them soon
+summary(data$profit_loss_year)
 
 data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
@@ -97,7 +102,20 @@ data <- data %>%
          sales_mil=sales/1000000,
          sales_mil_log = ifelse(sales > 0, log(sales_mil), 0))
 
+summary(data$CAGR)
+
+table_cagr <- data %>%
+   group_by(comp_id) %>%
+     summarize(CAGR = ((profit_loss_year / lag(profit_loss_year, 2)^0.33)-1))
+mutate(CAGR = ((lead(status_alive, 2) == 0)) %>%
+
+%>%
+     mutate(fast_growth = (CAGR >= 0.2) %>%
+        as.numeric(.)) %>%
+           ungroup()         
+         
 data <- data %>%
+  
   group_by(comp_id) %>%
   mutate(d1_sales_mil_log = sales_mil_log - Lag(sales_mil_log, 1) ) %>%
   ungroup()
