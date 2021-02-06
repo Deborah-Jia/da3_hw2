@@ -45,15 +45,16 @@ data_in <- paste(data_dir,"da3_hw2/data", sep = "/")
 
 #use_case_dir <- "ch17-predicting-firm-exit/"
 
-data_out <- paste0(data_in,"clean/")
-output <- paste0(data_in,"clean/")
+# data_out <- paste0(data_in,"clean/")
+# output <- paste0(data_in,"clean/")
 
 
 ###########################################################
 # Import data from github
 ###########################################################
+my_url <- "https://raw.githubusercontent.com/Deborah-Jia/da3_hw2/main/data/raw/cs_bisnode_panel.csv"
+data <- read.csv(my_url)
 
-data <- read.csv(paste(data_in,"raw/cs_bisnode_panel.csv", sep = "/"))
 
 # drop variables with many NAs
 data <- data %>%
