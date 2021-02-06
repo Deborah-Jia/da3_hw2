@@ -106,6 +106,17 @@ data <- data %>%
   
 
 data <- data %>%
+  mutate(sales = ifelse(sales < 0, 1, sales),
+         ln_sales = ifelse(sales > 0, log(sales), 0),
+         sales_mil=sales/1000000,
+         sales_mil_log = ifelse(sales > 0, log(sales_mil), 0))
+
+data <- data %>%
+  group_by(comp_id) %>%
+  mutate(d1_sales_mil_log = sales_mil_log - Lag(sales_mil_log, 1) ) %>%
+  ungroup()
+
+data <- data %>%
   mutate(age = (year - founded_year) %>%
            ifelse(. < 0, 0, .),
          new = as.numeric(age <= 1) %>% #  (age could be 0,1 )
@@ -113,7 +124,6 @@ data <- data %>%
          d1_sales_mil_log = ifelse(new == 1, 0, d1_sales_mil_log),
          new = ifelse(is.na(d1_sales_mil_log), 1, new),
          d1_sales_mil_log = ifelse(is.na(d1_sales_mil_log), 0, d1_sales_mil_log))
-
 
 
 ###########################################################
