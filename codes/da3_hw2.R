@@ -45,34 +45,37 @@ data_in <- paste(data_dir,"da3_hw2/data", sep = "/")
 
 #use_case_dir <- "ch17-predicting-firm-exit/"
 
-# data_out <- paste0(data_in,"clean/")
+data_out <- paste0(data_dir,"/da3_hw2/data/raw/")
 # output <- paste0(data_in,"clean/")
 
 
 ###########################################################
-# Import data from github
+# Import data
 ###########################################################
-my_url <- "https://raw.githubusercontent.com/Deborah-Jia/da3_hw2/main/data/raw/cs_bisnode_panel.csv"
-data <- read.csv(my_url)
+rm(table_cagr2)
 
+data <- read.csv(paste(data_in,"raw/cs_bisnode_panel.csv", sep = "/"))
 
 # drop variables with many NAs
 data <- data %>%
   select(-c(COGS, finished_prod, net_dom_sales, net_exp_sales, wages)) %>%
   filter(year != 2016)
 
+
 ###########################################################
 # label engineering
 ###########################################################
-
 # add all missing year and comp_id combinations -
 # originally missing combinations will have NAs in all other columns
 
 data <- data %>%
-  filter(year >= 2012 & year <= 2014)
-
-data <- data %>%
   complete(year, comp_id)
+
+# generate status_alive; if sales larger than zero and not-NA, then firm is alive
+data  <- data %>%
+  mutate(status_alive = sales > 0 & !is.na(sales) %>%
+           as.numeric(.))
+
 
 calc_cagr <- function(df, n) {
   df <- df %>%
@@ -86,14 +89,17 @@ calc_cagr <- function(df, n) {
 data <- calc_cagr(data,2)
 
 data <- data %>%
+  filter(year <=2013)
+
+data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
          ln_sales = ifelse(sales > 0, log(sales), 0),
          sales_mil=sales/1000000,
          sales_mil_log = ifelse(sales > 0, log(sales_mil), 0))
 
 
-data <- data %>%
-  filter(year <=2014 & year >= 2012)
+# data <- data %>%
+#   filter(year <=2014 & year >= 2012)
 
 table(is.nan(data$cagr))
 
@@ -101,7 +107,7 @@ data$cagr <- ifelse(is.nan(data$cagr), 0, data$cagr )
 
 # replace w 0 for new firms + add dummy to capture it
 data <- data %>%
-  mutate(fast_growth = ifelse( cagr >= 20, 1, 0) %>%
+  mutate(fast_growth = ifelse( cagr >= 0.20, 1, 0) %>%
     as.numeric(.))
   
 
@@ -125,6 +131,11 @@ data <- data %>%
          new = ifelse(is.na(d1_sales_mil_log), 1, new),
          d1_sales_mil_log = ifelse(is.na(d1_sales_mil_log), 0, d1_sales_mil_log))
 
+# generate status_alive; if sales larger than zero and not-NA, then firm is alive
+data  <- data %>%
+  mutate(status_alive = sales > 0 & !is.na(sales) %>%
+           as.numeric(.))
+
 
 ###########################################################
 # sample design
@@ -137,8 +148,14 @@ data <- data %>%
   filter(!(sales_mil > 10)) %>%
   filter(!(sales_mil < 0.001))
 
-Hmisc::describe(data$default)
-write_csv(data,paste0(data_out,"work5.csv"))
+Hmisc::describe(data$fast_growth)
+summary(data$fast_growth)
+
+
+data2 <- data %>% filter(!is.na(fast_growth))
+
+
+write_csv(data2,paste0(data_out,"work5.csv"))
 
 ###########################################################
 # Feature engineering
