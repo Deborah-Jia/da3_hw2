@@ -45,14 +45,13 @@ data_in <- paste(data_dir,"da3_hw2/data", sep = "/")
 
 #use_case_dir <- "ch17-predicting-firm-exit/"
 
-data_out <- paste0(data_dir,"/da3_hw2/data/clean/")
-# output <- paste0(data_in,"clean/")
+data_out <- paste0(data_dir,"/da3_hw2/data/clean/", sep = "/")
+output <- paste0(data_in,"clean/")
 
 
 ###########################################################
 # Import data
 ###########################################################
-rm(table_cagr2)
 
 data <- read.csv(paste(data_in,"raw/cs_bisnode_panel.csv", sep = "/"))
 
@@ -86,10 +85,23 @@ calc_cagr <- function(df, n) {
   return(df)
 }
 
+
 data <- calc_cagr(data,2)
+
+table(data$cagr)
+
+# fast growth is when cagr is above 0.20, denoted with 
+data <- data %>%
+  mutate(fast_growth = ifelse( cagr >= 0.2, 1, 0) %>%
+           as.numeric(.))
+  
+
 
 data <- data %>%
   filter(year <=2013)
+
+# Size and growth
+summary(data$sales)
 
 data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
@@ -98,18 +110,14 @@ data <- data %>%
          sales_mil_log = ifelse(sales > 0, log(sales_mil), 0))
 
 
-# data <- data %>%
-#   filter(year <=2014 & year >= 2012)
 
 table(is.nan(data$cagr))
 
+# since dividing with 0 is not possible, 
+# for these the cagr will be NaN, we replace them with 0
 data$cagr <- ifelse(is.nan(data$cagr), 0, data$cagr )
 
-# replace w 0 for new firms + add dummy to capture it
-data <- data %>%
-  mutate(fast_growth = ifelse( cagr >= 0.20, 1, 0) %>%
-    as.numeric(.))
-  
+
 
 data <- data %>%
   mutate(sales = ifelse(sales < 0, 1, sales),
@@ -136,7 +144,6 @@ data  <- data %>%
   mutate(status_alive = sales > 0 & !is.na(sales) %>%
            as.numeric(.))
 
-
 ###########################################################
 # sample design
 ###########################################################
@@ -152,10 +159,9 @@ Hmisc::describe(data$fast_growth)
 summary(data$fast_growth)
 
 
-data2 <- data %>% filter(!is.na(fast_growth))
+data <- data %>% filter(!is.na(fast_growth))
 
-
-write_csv(data2,paste0(data_out,"work5.csv"))
+write_csv(data,paste0(data_out,"work5.csv"))
 
 ###########################################################
 # Feature engineering
