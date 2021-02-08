@@ -26,7 +26,7 @@ library(gmodels)
 library(lspline)
 library(sandwich)
 
-#change your working dir
+#change your working dir to da_case_studies
 setwd("~/Desktop/da_case_studies")
 # load theme and functions
 source("ch00-tech-prep/theme_bg.R")
