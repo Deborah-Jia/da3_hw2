@@ -26,19 +26,31 @@ library(gmodels)
 library(lspline)
 library(sandwich)
 
-#change your working dir to da_case_studies
-setwd("~/Desktop/da_case_studies")
+
+# set working directory
+# option A: open material as project
+# option B: set working directory for da_case_studies
+#           example: setwd("C:/Users/bekes.gabor/Documents/github/da_case_studies/")
+
+setwd("~/Documents/CEU/Courses/2021_Winter/DA3/da_case_studies")
+
+# set data dir, data used
+source("set-data-directory.R")             # data_dir must be first defined 
+# alternative: give full path here, 
+#            example data_dir="C:/Users/bekes.gabor/Dropbox (MTA KRTK)/bekes_kezdi_textbook/da_data_repo"
+
 # load theme and functions
 source("ch00-tech-prep/theme_bg.R")
 source("ch00-tech-prep/da_helper_functions.R")
+options(digits = 3) 
 
-#change your data directory to the homework folder
-data_dir <- "~/Desktop"
+data_in <- paste(data_dir,"da3_hw2/bisnode-firms","clean/", sep = "/")
+use_case_dir <- "ch17-predicting-firm-exit/"
 
-#set different folders and check its path
-(data_in <- paste(data_dir,"da3_hw2/data", sep = "/"))
-(data_out <- paste0(data_dir,"/da3_hw2/data/clean/"))
-(output <- paste(data_in,"out/",sep = "/"))
+data_out <- use_case_dir
+output <- paste0(use_case_dir,"output/")
+create_output_if_doesnt_exist(output)
+
 
 ###########################################################
 # Import data
@@ -76,7 +88,7 @@ calc_cagr <- function(df, n) {
   return(df)
 }
 
-data <- calc_cagr(data,2)
+data <- calc_cagr(data,1)
 
 data <- data %>%
   filter(year <=2013)
@@ -386,7 +398,8 @@ source("ch00-tech-prep/da_helper_functions.R")
 options(digits = 3)
 
 
-data_dir <- "/Users/wodediannao/Desktop"
+
+data_dir <- "~/Documents/CEU/Courses/2021_Winter/DA3/da_case_studies"
 data_in <- paste(data_dir,"da3_hw2/data", sep = "/")
 
 #use_case_dir <- "ch17-predicting-firm-exit/"
@@ -404,13 +417,14 @@ data <- read_rds(paste(data_out,"bisnode_firms_clean.rds", sep = "/"))
 
 
 #summary
-<<<<<<< HEAD
+
+# <<<<<<< HEAD
 # datasummary_skim(data, type='numeric', histogram = TRUE)
 # datasummary_skim(data, type="categorical")
-=======
+# =======
 #datasummary_skim(data, type='numeric', histogram = TRUE)
 #datasummary_skim(data, type="categorical")
->>>>>>> b8318a4ae3652a1b74e1b75c933f14da3adea402
+# >>>>>>> b8318a4ae3652a1b74e1b75c933f14da3adea402
 
 
 # Define variable sets ----------------------------------------------
@@ -632,7 +646,7 @@ for (model_name in names(logit_models)) {
   for (fold in c("Fold1", "Fold2", "Fold3", "Fold4", "Fold5")) {
     cv_fold <-
       model$pred %>%
-      filter(Resample == fold)
+      dplyr::filter(Resample == fold)
     
     roc_obj <- roc(cv_fold$obs, cv_fold$fast_growth)
     auc[[fold]] <- as.numeric(roc_obj$auc)
@@ -723,7 +737,7 @@ roc_obj_holdout <- roc(data_holdout$fast_growth, data_holdout$best_logit_no_loss
 
 createRocPlot(roc_obj_holdout, "best_logit_no_loss_roc_plot_holdout")
 
-# Confusion table with different tresholds ----------------------------------------------------------
+# Confusion table with different thresholds ----------------------------------------------------------
 
 # fast_growth: the threshold 0.2 is used to convert probabilities to binary classes
 logit_class_prediction <- predict(best_logit_no_loss, newdata = data_holdout)
@@ -882,18 +896,18 @@ cm3
 # -----------------------------------------------
 
 data_for_graph <- data_train
-levels(data_for_graph$fast_growth_f) <- list("stay" = "no_fast_growth", "exit" = "fast_growth")
+levels(data_for_graph$fast_growth_f) <- list("slow" = "no_fast_growth", "fast" = "fast_growth")
 
 set.seed(13505)
 rf_for_graph <-
   rpart(
-    formula = fast_growth_f ~ sales_mil + profit_loss_year+ foreign_management,
+    formula = fast_growth_f ~ sales_mil + profit_loss_year + foreign_management,
     data = data_for_graph,
     control = rpart.control(cp = 0.0028, minbucket = 100)
   )
 
 rpart.plot(rf_for_graph, tweak=1, digits=2, extra=107, under = TRUE)
-save_tree_plot(rf_for_graph, "tree_plot", output, "small", tweak=1)
+# save_tree_plot(rf_for_graph, "tree_plot", output, "small", tweak=1)
 
 
 
@@ -983,11 +997,11 @@ rf_summary <- data.frame("CV RMSE" = CV_RMSE[["rf_p"]],
                          "Avg expected loss" = expected_loss[["rf_p"]],
                          "Expected loss for Fold5" = expected_loss_cv[[fold]])
 
-kable(x = rf_summary, format = "latex", booktabs=TRUE,  digits = 3, row.names = TRUE,
+kable(x = rf_summary, format = "html", booktabs=TRUE,  digits = 3, row.names = TRUE,
       linesep = "", col.names = c("CV RMSE", "CV AUC",
                                   "Avg of optimal thresholds","Threshold for fold #5",
                                   "Avg expected loss","Expected loss for fold #5")) %>%
-  cat(.,file= paste0(output, "rf_summary.tex"))
+  cat(.,file= paste0(output, "rf_summary.html"))
 
 # Create plots - this is for Fold5
 
@@ -1058,7 +1072,7 @@ summary_results <- summary_results %>%
   filter(rownames(.) %in% c("X1", "X4", "LASSO", "rf_p"))
 rownames(summary_results) <- model_names
 
-kable(x = summary_results, format = "latex", booktabs=TRUE,  digits = 3, row.names = TRUE,
+kable(x = summary_results, format = "html", booktabs=TRUE,  digits = 3, row.names = TRUE,
       linesep = "", col.names = c("Number of predictors", "CV RMSE", "CV AUC",
                                   "CV threshold", "CV expected Loss")) %>%
-  cat(.,file= paste0(output, "summary_results.tex"))
+  cat(.,file= paste0(output, "summary_results.html"))
