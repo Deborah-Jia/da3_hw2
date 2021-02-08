@@ -374,7 +374,7 @@ write_rds(data,paste0(data_out,"bisnode_firms_clean.rds"))
 #           example: setwd("C:/Users/bekes.gabor/Documents/github/da_case_studies/")
 
 
-
+setwd("~/Documents/CEU/Courses/2021_Winter/DA3/da_case_studies")
 # set data dir, data used
 source("set-data-directory.R")             # data_dir must be first defined 
 # alternative: give full path here, 
@@ -383,6 +383,8 @@ source("set-data-directory.R")             # data_dir must be first defined
 # load theme and functions
 source("ch00-tech-prep/theme_bg.R")
 source("ch00-tech-prep/da_helper_functions.R")
+options(digits = 3)
+
 
 data_dir <- "/Users/wodediannao/Desktop"
 data_in <- paste(data_dir,"da3_hw2/data", sep = "/")
@@ -402,8 +404,13 @@ data <- read_rds(paste(data_out,"bisnode_firms_clean.rds", sep = "/"))
 
 
 #summary
+<<<<<<< HEAD
 # datasummary_skim(data, type='numeric', histogram = TRUE)
 # datasummary_skim(data, type="categorical")
+=======
+#datasummary_skim(data, type='numeric', histogram = TRUE)
+#datasummary_skim(data, type="categorical")
+>>>>>>> b8318a4ae3652a1b74e1b75c933f14da3adea402
 
 
 # Define variable sets ----------------------------------------------
@@ -445,14 +452,14 @@ interactions1 <- c("ind2_cat*age", "ind2_cat*age2",
 interactions2 <- c("sales_mil_log*age", "sales_mil_log*female",
                    "sales_mil_log*profit_loss_year_pl", "sales_mil_log*foreign_management")
 
-
+# increasing set of features
 X1 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_loss_year_pl", "ind2_cat")
 X2 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_loss_year_pl", "fixed_assets_bs","share_eq_bs","curr_liab_bs ","curr_liab_bs_flag_high ", "curr_liab_bs_flag_error",  "age","foreign_management" , "ind2_cat")
 X3 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, d1)
 X4 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, engvar2, engvar3, d1, hr, qualityvars)
 X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, engvar2, engvar3, d1, hr, qualityvars, interactions1, interactions2)
 
-# for LASSO
+# for LASSO a separate set
 logitvars <- c("sales_mil_log", "sales_mil_log_sq", engvar, engvar2, engvar3, d1, hr, firm, qualityvars, interactions1, interactions2)
 
 # for RF (no interactions, no modified features)
@@ -548,6 +555,7 @@ Hmisc::describe(data_holdout
 train_control <- trainControl(
   method = "cv",
   number = 5,
+  # instruct that it i a binary prediction
   classProbs = TRUE,
   summaryFunction = twoClassSummaryExtended,
   savePredictions = TRUE
@@ -559,6 +567,7 @@ train_control <- trainControl(
 logit_model_vars <- list("X1" = X1, "X2" = X2, "X3" = X3, "X4" = X4, "X5" = X5)
 
 CV_RMSE_folds <- list()
+CV_RMSE_folds
 logit_models <- list()
 
 for (model_name in names(logit_model_vars)) {
@@ -638,6 +647,8 @@ for (model_name in names(logit_models)) {
 CV_RMSE <- list()
 CV_AUC <- list()
 
+
+
 for (model_name in names(logit_models)) {
   CV_RMSE[[model_name]] <- mean(CV_RMSE_folds[[model_name]]$RMSE)
   CV_AUC[[model_name]] <- mean(CV_AUC_folds[[model_name]]$AUC)
@@ -652,6 +663,7 @@ nvars[["LASSO"]] <- sum(lasso_coeffs != 0)
 logit_summary1 <- data.frame("Number of predictors" = unlist(nvars),
                              "CV RMSE" = unlist(CV_RMSE),
                              "CV AUC" = unlist(CV_AUC))
+
 
 kable(x = logit_summary1, format = "html", booktabs=TRUE,  digits = 3, row.names = TRUE,
       linesep = "", col.names = c("Number of predictors","CV RMSE","CV AUC")) %>%
