@@ -13,6 +13,29 @@ output:
     toc_float: yes
     fig_caption: yes
 ---
+# Introduction 
+
+Predicting whether firms will have fast growth is essential to banks that receive large-amount loan request. Thus, banks are quite willing to predict the fast growth probability for applicants; in other words, to classify firm applicants into prospective fast potentials and suspicious defaulters. Also, these financial institutions are eager to know the cost when a default happens and when real good applicants are neglected, both due to a prediction fault. How should they achieve such goals?
+
+In this report, we study the probability of firm fast growth: the goal is to predict whether firms will have fast growth and approximate losses due to bad decisions. We use bisnode-firms data set, which was collected, maintained and cleaned by Bisnode, a major European business information company. We have specified various logit models, a LASSO logit model, and randowm forest, to predict the probability of fast growth. Also, we figure out losses due to wrong predictions.
+
+# Data Management
+
+## Data collection
+
+The bisnode-firms data set covers the entire population of companies between 2005 and 2016 for some industries on manufacturing and services, including electronic and optical products, machinery and equipment, accommodation and food and beverage service activities. The data set has 5 components:
+
+* Financial data: revenue, inventories, assets, etc.
+* Managers: CEO age, gender, etc.
+* Employment: wages, average labor, etc.
+* Corporate registry: foreign, year of company birth, etc.
+* Industry classification: NACE industrial classification.
+
+As these data represents manufacturing and services industries only, we can hardly assert that they are representative of all industries when it comes to external validity. But speaking of these industries within EU region, it is rather an representative sample. 
+
+As we take a glimpse of the data set, certain measurement error exists, such as non-negative variables(e.g. inventories, current liabilities, etc) that have negative values. We will take more actions in the feature engineering part.
+
+In this report, we focus on a cross-section of firms in 2012, and we'll test whether they have fast growth in subsequent years.
 ```{r set up, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
@@ -460,15 +483,16 @@ rfvars  <-  c("sales_mil", "d1_sales_mil_log", rawvars, hr, firm, qualityvars)
 ```{r}
 
 ```
+## Label Engineering
+
+In this data, fast growth is not explicitly measured: we say that a firm has fast growth if its sales grew more than 20% from 2011 year end to 2012 year end. Hence, the y variable is a binary variable: it is 1 if the firm grows more than 20% in 2012 and 0 otherwise.
+
+## Sample Design
 
 
-# Introduction 
-Predicting whether firms will have fast growth is essential to banks that receive large-amount loan request. Thus, banks are quite willing to predict the fast growth probability for applicants; in other words, to classify firm applicants into prospective fast potentials and suspicious defaulters. Also, these financial institutions are eager to know the cost when a default happens and when real good applicants are neglected, both due to a prediction fault. How should they achieve such goals?
 
-In this report, we study the probability of firms' fast growth: the goal is to predict whether firms will have fast growth. We use 
+## Feature engineering
 
-
-# Sample Design
-# Label Engineer
 # Models and Probability Prediction
+
 # Summary
