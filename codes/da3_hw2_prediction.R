@@ -30,9 +30,9 @@ library(sandwich)
 # set working directory
 # option A: open material as project
 # option B: set working directory for da_case_studies
-#           example: setwd("C:/Users/bekes.gabor/Documents/github/da_case_studies/")
+#           example: 
 
-setwd("~/Documents/CEU/Courses/2021_Winter/DA3/da_case_studies")
+setwd("~/Documents/CEU/Courses/2021_Winter/DA3/da_case_studies/")
 
 # set data dir, data used
 source("set-data-directory.R")             # data_dir must be first defined 
@@ -42,9 +42,8 @@ source("set-data-directory.R")             # data_dir must be first defined
 # load theme and functions
 source("ch00-tech-prep/theme_bg.R")
 source("ch00-tech-prep/da_helper_functions.R")
-options(digits = 3) 
 
-data_in <- paste(data_dir,"da3_hw2/bisnode-firms","clean/", sep = "/")
+data_in <- paste(data_dir,"bisnode-firms/clean", sep = "/")
 use_case_dir <- "ch17-predicting-firm-exit/"
 
 data_out <- use_case_dir
@@ -58,9 +57,10 @@ create_output_if_doesnt_exist(output)
 
 data <- read.csv(paste(data_in,"raw/cs_bisnode_panel.csv", sep = "/"))
 
+
 # drop variables with many NAs
 data <- data %>%
-  select(-c(COGS, finished_prod, net_dom_sales, net_exp_sales, wages)) %>%
+  dplyr::select(-c(COGS, finished_prod, net_dom_sales, net_exp_sales, wages)) %>%
   filter(year != 2016)
 
 
