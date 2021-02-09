@@ -88,6 +88,7 @@ data_out <- use_case_dir
 output <- paste0(use_case_dir,"output/")
 create_output_if_doesnt_exist(output)
 ```
+
 ```{r import data, include = FALSE}
 
 ###########################################################
@@ -311,6 +312,7 @@ variances<- data %>%
 
 data <- data %>%
   select(-one_of(names(variances)[variances]))
+
 ```
 ```{r additional imputations, include = FALSE}
 
@@ -475,19 +477,23 @@ interactions1 <- c("ind2_cat*age", "ind2_cat*age2",
 interactions2 <- c("sales_mil_log*age", "sales_mil_log*female",
                    "sales_mil_log*profit_loss_year_pl", "sales_mil_log*foreign_management")
 
-# increasing set of features
+# create increasing set of features
 X1 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_loss_year_pl", "ind2_cat")
 X2 <- c("sales_mil_log", "sales_mil_log_sq", "d1_sales_mil_log_mod", "profit_loss_year_pl", "fixed_assets_bs","share_eq_bs","curr_liab_bs ","curr_liab_bs_flag_high ", "curr_liab_bs_flag_error",  "age","foreign_management" , "ind2_cat")
 X3 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, d1)
 X4 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, engvar2, engvar3, d1, hr, qualityvars)
 X5 <- c("sales_mil_log", "sales_mil_log_sq", firm, engvar, engvar2, engvar3, d1, hr, qualityvars, interactions1, interactions2)
 
-# for LASSO a separate set
+# for LASSO logit a separate set
 logitvars <- c("sales_mil_log", "sales_mil_log_sq", engvar, engvar2, engvar3, d1, hr, firm, qualityvars, interactions1, interactions2)
 
-# for RF (no interactions, no modified features)
+# for RF (no interactions, no modified features) since interactions are going to be discovered by random forest
 rfvars  <-  c("sales_mil", "d1_sales_mil_log", rawvars, hr, firm, qualityvars)
 ```
+
+To get the sense of the data, with a simple linear probability model, d1_sales_mil_los_sq --> if sales is on the increase than it signals that the firm will have a fast_growth in the next year (not as an only influencing factor).
+Industry categories of 'Management companies and enterprises' and 'Administrative and Support services' are the most significant with the most category members as well and signal fast_growth.GLM model estimation gives similar results in terms of coefficients for the same variables. It also makes sense that for instance the flag for high current liabilities is indicative of no fast_growth since it has a negative sign for the coefficient.
+
 
 ```{r models, include = FALSE}
 
@@ -526,7 +532,7 @@ sum_table
 
 ```
 
-
+On the other hand, when using linear probability model with the baseline model, which contains no interactions, the first difference of sales is a strong signal of the firm not experiencing fast growth and likewise for the flag for high first difference of sales, which is not that intuitive.
 ```{r baseline model, include = FALSE}
 
 # baseline model is X4 (all vars, but no interactions) -------------------------------------------------------
@@ -560,6 +566,8 @@ sum_table2
 
 ```
 
+## Part 1 - Probability prediciton
+After splitting our data into train and holdout sets, the proportion of the observations in the training set was 66% to 34% on the favor of no_fast_growth factor (out of 14210 train sample size).The holdout set had 3552 observations and very similar proportion (65%-35% respectively), which seemed as a balanced split. This suggests that fast_growth (in terms of our definition) is a bit more frequent than defaulting.
 ```{r separate datasets, include = FALSE}
 
 # separate datasets -------------------------------------------------------
@@ -578,14 +586,8 @@ Hmisc::describe(data_train$fast_growth_f)
 Hmisc::describe(data_holdout
                 $fast_growth_f)
 ```
-
-```{r predict probabilities, include = FALSE}
-
-#######################################################x
-# PART I PREDICT PROBABILITIES
-# Predict logit models 
-#######################################################x
-
+Using 5-fold cross validation, we trained our logit models with 83 features and collected the RMSE values. Difference within the folds is much smaller than among them; there is even a big jump from 0.33 to 0.18 from set of features 2 and 3, where the set number 3 also includes information on the firm. Averaging them out indicates the cross-validated out-of sample performance. Based on this measure our choice is model nb 3 since there is a big improvement after the second one, but it is the least complex among models 3,4 and 5.
+```{r PART 1 PREDICT PROBABILITIES, include = FALSE}
 # 5 fold cross-validation
 train_control <- trainControl(
   method = "cv",
@@ -694,6 +696,7 @@ for (model_name in names(logit_models)) {
 
 ```
 
+After that for all logit types of models we calculated the cross-validated average of the RMSE. Based on that we see that models 3 and 4 are very close to each other (0.182 and 0.180) along with LASSO but the difference in the number of variables (factor levels are counted as individual variables) included is much bigger for LASSO so that is definitely a no choice. LASSO logit eliminated highly correlated variables, mostly related to extra profit loss and fixed assets.
 ```{r, include = FALSE}
 # We have 6 models, (5 logit and the logit lasso). For each we have a 5-CV RMSE and AUC.
 # We pick our preferred model based on that. -----------------------------------------------
@@ -711,7 +714,14 @@ kable(x = logit_summary1, format = "html", booktabs=TRUE,  digits = 3, row.names
   cat(.,file= paste0(data_out, "logit_summary1.html"))
 
 ```
+```{r, echo=FALSE, warning = FALSE, message= FALSE, out.width = '50%', fig.height=4, "Logit Summary Table"}
 
+library(pander)
+panderOptions("table.split.table", Inf)
+pander(x = logit_summary1,  digits = 3, row.names = FALSE,
+      linesep = "", col.names = c("Number of predictors","CV RMSE","CV AUC"))
+```
+Testing our chosen model, number 4 on the remaining holdout sample, we arrive at a similar RMSE value of 0.175, which is actually better than on the training sample was.
 ```{r}
 
 # Take best model and estimate RMSE on holdout  -------------------------------------------
@@ -722,7 +732,11 @@ logit_predicted_probabilities_holdout <- predict(best_logit_no_loss, newdata = d
 data_holdout[,"best_logit_no_loss_pred"] <- logit_predicted_probabilities_holdout[,"fast_growth"]
 RMSE(data_holdout[, "best_logit_no_loss_pred", drop=TRUE], data_holdout$fast_growth)
 
+
+
+
 # discrete ROC (with thresholds in steps) on holdout -------------------------------------------------
+# what mistakes ar we making at different thresholds.
 thresholds <- seq(0.05, 0.75, by = 0.05)
 
 cm <- list()
@@ -827,7 +841,7 @@ create_calibration_plot(data_holdout,
 
 ```
 
-```{r PART II with loss finction, include =FALSE}
+```{r PART 2 WITH LOSS FUNCTION, include =FALSE}
 
 #############################################x
 # PART II.
@@ -936,6 +950,7 @@ cm_object3 <- confusionMatrix(holdout_prediction,data_holdout$fast_growth_f)
 cm3 <- cm_object3$table
 cm3
 ```
+
 ```{r probability forest, include = FALSE}
 
 #################################################
