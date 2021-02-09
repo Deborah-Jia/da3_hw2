@@ -1,0 +1,24 @@
+---
+title: "Fast Gorwth Prediction of Firms"
+author: Karola Takács(), Li Jia(2000692)
+params:
+  dynamictitle: Firm Fast Growth Prediction
+  viridis_palette: viridis
+output:
+  html_document:
+    highlighter: null
+    theme: "flatly"
+    code_download: TRUE
+    toc: TRUE 
+    toc_float: TRUE
+---
+# Introduction 
+Predicting whether firms will have fast growth is essential to banks that receive large-amount loan request. Thus, banks are quite willing to predict the fast growth probability for applicants; in other words, to classify firm applicants into prospective fast potentials and suspicious defaulters. Also, these financial institutions are eager to know the cost when a default happens and when real good applicants are neglected, both due to a prediction fault. How should they achieve such goals?
+
+In this report, we study the probability of firm fast growth: the goal is to predict whether firms will have fast growth. We use 
+
+
+# Sample Design
+# Label Engineer
+# Models and Probability Prediction
+# Summary
